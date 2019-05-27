@@ -43,7 +43,7 @@ namespace MyFunctionProj
 
         private static string GetEndPointAddress()
         {
-            return Environment.GetEnvironmentVariable("ServerNotificationAddress")
+            return Environment.GetEnvironmentVariable("TestServerNotificationEndPoint")
                    ?? "http://localhost:7069/api/TestServerNotification";
         }
     }

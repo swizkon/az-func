@@ -1,38 +1,62 @@
 using System;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
-
-using System.IO;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Net.Http;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.WindowsAzure.Storage.Queue;
 
 namespace MyFunctionProj
 {
     public static class QueueServerNotification
     {
+        private static readonly HttpClient httpClient = new HttpClient();
+
         [FunctionName("QueueServerNotification")]
-        public static void Run([QueueTrigger("servernotifications", Connection = "QueueStorageAccount")]string myQueueItem, ILogger log)
+        public static IActionResult Run(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            [Queue("servernotifications", Connection = "QueueStorageAccount")] out string servernotification,
+            [Queue("servernotifications", Connection = "QueueStorageAccount")] ICollector<string> servernotifications,
+            //[Queue("servernotifications", Connection = "AzureWebJobsStorage")] out string servernotification,
+            ILogger log)
         {
-            log.LogInformation($"C# Queue trigger function processed: {myQueueItem}");
+
+            // log.LogInformation($"C# Queue trigger function processed: {myQueueItem}");
+            
+            servernotification = "servernotification " + DateTime.Now.ToString();
+
+
+            for (var i = 1; i < 10; i++)
+            {
+                servernotifications.Add($"Notification {i}");
+            }
+            
+
+
+            // queueCollector.Add(new Customer { FirstName = "John" });
+
+            //ICollector<CustomQueueMessage> myQueueItems
+
+            //var body = new FormUrlEncodedContent(new[]
+            //{
+            //    new KeyValuePair<string, string>("plan", "123"),
+            //    new KeyValuePair<string, string>("task", "12345"),
+            //    new KeyValuePair<string, string>("message", myQueueItem)
+            //});
+
+
+            log.LogInformation("Got StatusCode {ServerNotification}", servernotification);
+
+
+            return new OkObjectResult(servernotification);
+
+        }
+
+        private static string GetEndPointAddress()
+        {
+            return Environment.GetEnvironmentVariable("ServerNotificationAddress") ?? "http://localhost:7071/api/TestServerNotification";
         }
     }
 }
-/*
- *{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "QueueStorageAccount": "AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;DefaultEndpointsProtocol=http;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
-  },
-  "ConnectionStrings": {
-    "QueueStorageAccount": "AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;DefaultEndpointsProtocol=http;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
-  } 
-}
- *
- */
