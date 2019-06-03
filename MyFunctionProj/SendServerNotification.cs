@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -14,11 +15,10 @@ namespace MyFunctionProj
 {
     public static class SendServerNotification
     {
-        private static readonly HttpClient httpClient = new HttpClient();
-
         [FunctionName("SendServerNotification")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            [SignalR(HubName = "chat", ConnectionStringSetting = "SignalRService")]IAsyncCollector<SignalRMessage> signalRMessages,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
@@ -28,17 +28,14 @@ namespace MyFunctionProj
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
-
-            var body = new FormUrlEncodedContent(new []
+            
+            await signalRMessages.AddAsync(new SignalRMessage
             {
-                new KeyValuePair<string, string>("plan", "123"), 
-                new KeyValuePair<string, string>("task", "12345"), 
-                new KeyValuePair<string, string>("task", "12345")
+                Target = "echo",
+                Arguments = new object[] {"Az Func", name }
             });
-
-            var response = await httpClient.PostAsync(GetEndPointAddress(), body);
-            var result = await response.Content.ReadAsStringAsync();
-            return new OkObjectResult($"Hello, {response.StatusCode} {result}");
+            
+            return new OkObjectResult($"Hello, {name}");
         }
 
         private static string GetEndPointAddress()

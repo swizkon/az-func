@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -20,9 +21,18 @@ namespace MyFunctionProj
         private static readonly HttpClient httpClient = new HttpClient();
 
         [FunctionName("DequeueServerNotification")]
-        public static async void Run([QueueTrigger("servernotifications", Connection = "QueueStorageAccount")]string myQueueItem, ILogger log)
+        public static async void Run(
+            [QueueTrigger("servernotifications", Connection = "QueueStorageAccount")]string myQueueItem,
+            [SignalR(HubName = "chat", ConnectionStringSetting = "SignalRService")]IAsyncCollector<SignalRMessage> signalRMessages,
+            ILogger log)
         {
             log.LogInformation($"DequeueServerNotification C# Queue trigger function processed: {myQueueItem}");
+            
+            await signalRMessages.AddAsync(new SignalRMessage
+            {
+                Target = "echo",
+                Arguments = new object[] { "DequeueServerNotification", myQueueItem }
+            });
 
             var body = new FormUrlEncodedContent(new[]
             {

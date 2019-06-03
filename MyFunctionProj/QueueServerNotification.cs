@@ -12,29 +12,17 @@ namespace MyFunctionProj
 {
     public static class QueueServerNotification
     {
-        private static readonly HttpClient httpClient = new HttpClient();
-
         [FunctionName("QueueServerNotification")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
-            [Queue("servernotifications", Connection = "QueueStorageAccount")] out string servernotification,
             [Queue("servernotifications", Connection = "QueueStorageAccount")] ICollector<string> servernotifications,
-            //[Queue("servernotifications", Connection = "AzureWebJobsStorage")] out string servernotification,
             ILogger log)
         {
-
-            // log.LogInformation($"C# Queue trigger function processed: {myQueueItem}");
-            
-            servernotification = "servernotification " + DateTime.Now.ToString();
-
-
             for (var i = 1; i < 10; i++)
             {
-                servernotifications.Add($"Notification {i}");
+                servernotifications.Add($"Server Notification {i} at {DateTime.Now}");
             }
             
-
-
             // queueCollector.Add(new Customer { FirstName = "John" });
 
             //ICollector<CustomQueueMessage> myQueueItems
@@ -45,13 +33,10 @@ namespace MyFunctionProj
             //    new KeyValuePair<string, string>("task", "12345"),
             //    new KeyValuePair<string, string>("message", myQueueItem)
             //});
+            
+            log.LogInformation("Got StatusCode {QueryString}", req.QueryString);
 
-
-            log.LogInformation("Got StatusCode {ServerNotification}", servernotification);
-
-
-            return new OkObjectResult(servernotification);
-
+            return new OkObjectResult(req.QueryString);
         }
 
         private static string GetEndPointAddress()
